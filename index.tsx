@@ -413,32 +413,27 @@ const FullPlayer = ({
     onLike: (id: string) => void
 }) => {
     // --- Circular Progress Logic ---
-    const radius = 120; // Radius of the circle
-    const strokeWidth = 3;
-    const size = 320; // SVG viewBox size
+    // Use a size that fits most mobile screens comfortably
+    const size = 300; 
+    const radius = 120; 
+    const strokeWidth = 2; 
     const center = size / 2;
     const circumference = 2 * Math.PI * radius;
     const progress = duration > 0 ? currentTime / duration : 0;
     const dashOffset = circumference - progress * circumference;
 
-    // Calculate knob position (rotate -90deg so it starts top center)
+    // Knob position
     const angle = (progress * 2 * Math.PI) - (Math.PI / 2);
     const knobX = center + radius * Math.cos(angle);
     const knobY = center + radius * Math.sin(angle);
 
-    // Interactive Seek on Circle
     const handleCircleClick = (e: React.MouseEvent<SVGSVGElement>) => {
         const rect = e.currentTarget.getBoundingClientRect();
         const x = e.clientX - rect.left - rect.width / 2;
         const y = e.clientY - rect.top - rect.height / 2;
-        // Calculate angle from -PI to PI, starting at top (-PI/2)
-        // atan2(y, x) gives angle from x-axis. 
         let angle = Math.atan2(y, x);
-        
-        // Shift so top is 0, clockwise
         angle += Math.PI / 2;
         if (angle < 0) angle += 2 * Math.PI;
-        
         const newProgress = angle / (2 * Math.PI);
         onSeek(newProgress * duration);
     };
@@ -458,68 +453,50 @@ const FullPlayer = ({
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
             className="fixed inset-0 z-50 flex flex-col bg-[#2e3440]"
         >
-            {/* Dynamic Background with heavy blur */}
+             {/* Backgrounds */}
             <div 
-                className="absolute inset-0 bg-cover bg-center pointer-events-none transition-all duration-1000"
+                className="absolute inset-0 bg-cover bg-center pointer-events-none blur-md opacity-50"
                 style={{ backgroundImage: `url(${song.coverUrl})` }}
             />
-            {/* Dark overlay with gradient for the mood */}
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-[40px] pointer-events-none" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#1a1c20] via-[#1a1c20]/80 to-transparent pointer-events-none" />
-
-            {/* Content Container */}
-            <div className="relative z-10 flex flex-col h-full safe-area-inset-top w-full max-w-lg mx-auto">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-3xl" />
+            
+            {/* Main Content */}
+            <div className="relative z-10 flex flex-col h-full w-full max-w-md mx-auto px-6">
                 
-                {/* 1. Header Row */}
-                <div className="flex justify-between items-center px-6 pt-10 pb-2">
-                    <button onClick={onClose} className="p-2 text-white/70 hover:text-white transition-colors">
-                        <CaretDown size={28} />
+                {/* 1. Header */}
+                <div className="flex justify-between items-center py-6 mt-4">
+                    <button onClick={onClose} className="p-2 text-white/70 hover:text-white transition-colors active:scale-90">
+                        <CaretDown size={24} />
                     </button>
-                    <div className="flex flex-col items-center">
-                        <span className="text-[10px] uppercase tracking-[0.2em] text-white/50 font-medium">Playing From</span>
-                        <span className="text-xs font-bold text-white mt-1">Starlit Playlist</span>
-                    </div>
-                    <button className="p-2 text-white/70 hover:text-white transition-colors">
-                        <DotsThree size={28} weight="bold" />
+                    <span className="text-xs font-bold tracking-widest uppercase text-white/50">Playing Now</span>
+                    <button className="p-2 text-white/70 hover:text-white transition-colors active:scale-90">
+                        <DotsThree size={24} weight="bold" />
                     </button>
                 </div>
 
-                <div className="flex-1 flex flex-col items-center justify-center">
-                    {/* 2. Text Info (Top) */}
-                    <div className="flex flex-col items-center justify-center mb-4 px-8 text-center space-y-1">
-                        <motion.h2 
-                            key={song.title}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="text-2xl md:text-3xl font-bold text-white leading-tight"
-                        >
-                            {song.title}
-                        </motion.h2>
-                        <motion.p 
-                            key={song.artist}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="text-base text-white/50 font-medium"
-                        >
-                            {song.artist}
-                        </motion.p>
-                    </div>
+                {/* 2. Title Info (Top Centered) */}
+                <div className="flex flex-col items-center mt-2 mb-2">
+                    <h2 className="text-2xl font-bold text-white text-center line-clamp-1">{song.title}</h2>
+                    <p className="text-white/60 text-sm font-medium mt-1">{song.artist}</p>
+                </div>
 
-                    {/* Time Display */}
-                    <div className="text-xs font-mono text-brand-lime/80 mb-6 tracking-widest">
-                        {formatTime(currentTime)} <span className="text-white/30 mx-2">|</span> {formatTime(duration)}
-                    </div>
+                {/* 3. Time (Below Title) */}
+                <div className="flex items-center justify-center gap-2 text-xs font-mono text-brand-lime/80 tracking-widest mb-6">
+                    <span>{formatTime(currentTime)}</span>
+                    <span className="text-white/20">|</span>
+                    <span>{formatTime(duration)}</span>
+                </div>
 
-                    {/* 3. Circular Album Art & Progress */}
-                    <div className="relative flex items-center justify-center mb-8">
-                        {/* The Circular Progress SVG */}
+                {/* 4. Circle Player (Middle) */}
+                <div className="flex-1 flex items-center justify-center min-h-0">
+                    <div className="relative" style={{ width: size, height: size }}>
                         <svg 
                             width={size} 
                             height={size} 
                             className="absolute inset-0 rotate-0 cursor-pointer"
                             onClick={handleCircleClick}
                         >
-                            {/* Track */}
+                            {/* Track Ring */}
                             <circle
                                 cx={center}
                                 cy={center}
@@ -528,13 +505,13 @@ const FullPlayer = ({
                                 stroke="rgba(255,255,255,0.1)"
                                 strokeWidth={strokeWidth}
                             />
-                            {/* Progress */}
+                            {/* Progress Ring */}
                             <circle
                                 cx={center}
                                 cy={center}
                                 r={radius}
                                 fill="none"
-                                stroke="#D2F05D" // Brand Lime
+                                stroke="#D2F05D"
                                 strokeWidth={strokeWidth}
                                 strokeDasharray={circumference}
                                 strokeDashoffset={dashOffset}
@@ -542,75 +519,72 @@ const FullPlayer = ({
                                 transform={`rotate(-90 ${center} ${center})`}
                                 className="transition-all duration-100 ease-linear"
                             />
-                            {/* Knob */}
-                            <circle 
+                            {/* Knob Indicator */}
+                             <circle 
                                 cx={knobX}
                                 cy={knobY}
-                                r={6}
+                                r={8}
                                 fill="#D2F05D"
-                                className="shadow-[0_0_10px_#D2F05D]"
+                                className="shadow-[0_0_15px_#D2F05D]"
                             />
                         </svg>
-
-                        {/* Album Art Image (Centered) */}
+                        
+                        {/* Image Container - perfectly centered */}
                         <div 
-                            className="rounded-full overflow-hidden shadow-2xl border-4 border-white/5"
+                            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full overflow-hidden shadow-2xl"
                             style={{ 
-                                width: radius * 2 - 30, 
-                                height: radius * 2 - 30 
+                                width: radius * 2 - 40, 
+                                height: radius * 2 - 40 
                             }}
                         >
                             <img 
                                 src={song.coverUrl} 
                                 alt="Cover" 
-                                className={`w-full h-full object-cover transition-transform duration-[4000ms] ease-linear ${isPlaying ? 'rotate-[360deg]' : ''}`}
-                                style={{ animation: isPlaying ? 'spin 20s linear infinite' : 'none' }}
+                                className={`w-full h-full object-cover ${isPlaying ? 'animate-spin-slow' : ''}`}
+                                style={{ animationDuration: '20s' }}
                             />
                         </div>
                     </div>
+                </div>
 
-                    {/* 4. Controls */}
-                    <div className="w-full px-12 mb-8">
-                        <div className="flex items-center justify-between">
-                            <button className="text-white/50 hover:text-white transition-colors">
-                                <MinusCircle size={28} />
-                            </button>
+                {/* 5. Main Controls */}
+                <div className="flex items-center justify-between w-full mb-8 px-2">
+                    <button className="text-white/40 hover:text-white transition-colors active:scale-90">
+                        <MinusCircle size={24} />
+                    </button>
 
-                            <button onClick={onPrev} className="text-white hover:text-brand-lime transition-colors active:scale-90 transform">
-                                <SkipBack size={32} weight="fill" />
-                            </button>
+                    <button onClick={onPrev} className="text-white hover:text-brand-lime transition-colors active:scale-90 transform">
+                        <SkipBack size={32} weight="fill" />
+                    </button>
 
-                            <button 
-                                onClick={onPlayPause}
-                                className="w-20 h-20 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)]"
-                            >
-                                {isPlaying ? <Pause size={32} weight="fill" /> : <Play size={32} weight="fill" className="ml-1" />}
-                            </button>
+                    <button 
+                        onClick={onPlayPause}
+                        className="w-16 h-16 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+                    >
+                        {isPlaying ? <Pause size={28} weight="fill" /> : <Play size={28} weight="fill" className="ml-1" />}
+                    </button>
 
-                            <button onClick={onNext} className="text-white hover:text-brand-lime transition-colors active:scale-90 transform">
-                                <SkipForward size={32} weight="fill" />
-                            </button>
+                    <button onClick={onNext} className="text-white hover:text-brand-lime transition-colors active:scale-90 transform">
+                        <SkipForward size={32} weight="fill" />
+                    </button>
 
-                            <button 
-                                onClick={() => onLike(song.id)}
-                                className={`transition-colors active:scale-90 ${song.liked ? 'text-brand-lime' : 'text-white/50 hover:text-white'}`}
-                            >
-                                <Heart size={28} weight={song.liked ? "fill" : "regular"} />
-                            </button>
-                        </div>
-                    </div>
+                    <button onClick={() => onLike(song.id)} className={`transition-colors active:scale-90 ${song.liked ? 'text-brand-lime' : 'text-white/40 hover:text-white'}`}>
+                        <Heart size={24} weight={song.liked ? "fill" : "regular"} />
+                    </button>
+                </div>
 
-                    {/* 5. Bottom Controls */}
-                    <div className="w-full px-10 mb-8 flex items-center justify-between text-white/40">
-                         <button className="hover:text-white transition-colors"><Shuffle size={24} /></button>
-                         <button className="hover:text-white transition-colors"><ListDashes size={24} /></button>
-                         <button className="hover:text-white transition-colors"><SpeakerHigh size={24} /></button>
-                         <button className="hover:text-white transition-colors"><Repeat size={24} /></button>
-                    </div>
+                {/* 6. Secondary Controls */}
+                <div className="flex justify-between items-center w-full px-8 pb-10 text-white/40">
+                    <button className="hover:text-white active:scale-90 transition-transform"><Shuffle size={20} /></button>
+                    <button className="hover:text-white active:scale-90 transition-transform"><ListDashes size={20} /></button>
+                    <button className="hover:text-white active:scale-90 transition-transform"><SpeakerHigh size={20} /></button>
+                    <button className="hover:text-white active:scale-90 transition-transform"><Repeat size={20} /></button>
                 </div>
             </div>
-            
-            <style>{`
+             <style>{`
+                .animate-spin-slow {
+                    animation: spin 20s linear infinite;
+                }
                 @keyframes spin {
                     from { transform: rotate(0deg); }
                     to { transform: rotate(360deg); }
